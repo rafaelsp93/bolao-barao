@@ -2,7 +2,8 @@ name: Send prediction reminders
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    # Offset from minute 0, when GitHub Actions scheduled workflows are busiest.
+    - cron: "8 * * * *"
   workflow_dispatch:
 
 jobs:

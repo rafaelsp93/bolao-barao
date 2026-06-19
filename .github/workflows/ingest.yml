@@ -3,9 +3,9 @@ name: Sync football data
 # Pulls fixtures/results/scorers and recomputes scoring.
 on:
   schedule:
-    # Every 15 minutes. GitHub may delay scheduled runs under load; admins can
-    # also trigger a manual sync in the app.
-    - cron: "*/15 * * * *"
+    # Every 15 minutes, offset from the busiest minute buckets. GitHub may delay
+    # or drop scheduled runs under load; admins can also trigger a manual sync.
+    - cron: "7,22,37,52 * * * *"
   workflow_dispatch:
 
 jobs:
