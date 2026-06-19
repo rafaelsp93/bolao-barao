@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ⚽ Bolão do Barão — Copa do Mundo 2026
 
-## Getting Started
+A friend-group World Cup sweepstake. Predict match scores, bet on the champion
+and top scorer, and climb a live "Stadium Night" scoreboard.
 
-First, run the development server:
+- **Scoring (per match, flat across stages):** exact score **10**, correct result
+  + one team's goals **5**, correct result only **3**, wrong **0**. Champion
+  bet **25**, top scorer **15**.
+- **Locks:** match predictions lock at kickoff; champion/top-scorer bets freeze
+  at the end of a player's first-login day.
+- **Stack:** Next.js (App Router) · Drizzle + Neon Postgres · Auth.js magic-link
+  via Resend · football-data.org (free tier) · Tailwind v4.
+
+## Local development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env        # fill in the values (see below)
+npm install
+npm run db:push             # create tables in your Neon database
+npm run db:seed             # optional: demo teams/players/matches
+npm run dev                 # http://localhost:3000
+npm test                    # scoring / locks / standings unit tests
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Required services (all have free tiers)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. **Neon Postgres** — create a project, copy the connection string into
+   `DATABASE_URL`, then `npm run db:push`.
+2. **Resend** — create an API key (`AUTH_RESEND_KEY`). **Important:** to email
+   anyone other than your own Resend account address you must **verify a sending
+   domain** (add its DNS records) and set `EMAIL_FROM` to an address on it.
+   Without this, magic-link login only works for your own email.
+3. **football-data.org** — free API token (`FOOTBALL_DATA_TOKEN`). Covers WC 2026
+   fixtures, scores, standings, and scorers.
+4. **AUTH_SECRET** — `openssl rand -base64 32`.
+5. **ADMIN_EMAILS** — comma-separated; these emails become admins on first login.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deploy (Vercel Cron)
 
-## Learn More
+1. Push to GitHub, import the repo in **Vercel**.
+2. Set all env vars from `.env.example` in Vercel (set `NEXTAUTH_URL` to the
+   production URL). Set `CRON_SECRET`; Vercel Cron sends it as a bearer token
+   when invoking the cron routes.
+3. `vercel.json` schedules the protected cron routes:
+   - `/api/cron/ingest` — every 15 min: sync results + recompute scores.
+   - `/api/cron/reminders` — hourly: email players with un-predicted upcoming
+     matches.
+4. As admin, open **/admin → Sincronizar agora** to pull real fixtures, and use
+   the form to backfill each player's starting points from the old platform.
 
-To learn more about Next.js, take a look at the following resources:
+## How scoring stays correct
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`lib/scoring.ts` is a pure, tested function. The caller passes the
+regulation + extra-time scoreline (penalty shootouts are ignored), so a knockout
+level after ET scores as a draw. Recompute runs on every ingest and after any
+admin score override.
