@@ -1,0 +1,19 @@
+name: Sync football data
+
+# Pulls fixtures/results/scorers and recomputes scoring.
+on:
+  schedule:
+    # Every 15 minutes. GitHub may delay scheduled runs under load; admins can
+    # also trigger a manual sync in the app.
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger ingest
+        run: |
+          curl -fsS -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/cron/ingest"

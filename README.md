@@ -35,16 +35,16 @@ npm test                    # scoring / locks / standings unit tests
 4. **AUTH_SECRET** — `openssl rand -base64 32`.
 5. **ADMIN_EMAILS** — comma-separated; these emails become admins on first login.
 
-## Deploy (Vercel Cron)
+## Deploy (Vercel + GitHub Actions cron)
 
 1. Push to GitHub, import the repo in **Vercel**.
 2. Set all env vars from `.env.example` in Vercel (set `NEXTAUTH_URL` to the
-   production URL). Set `CRON_SECRET`; Vercel Cron sends it as a bearer token
-   when invoking the cron routes.
-3. `vercel.json` schedules the protected cron routes:
-   - `/api/cron/ingest` — every 15 min: sync results + recompute scores.
-   - `/api/cron/reminders` — hourly: email players with un-predicted upcoming
-     matches.
+   production URL).
+3. Add GitHub repo **secrets**: `APP_URL` (the Vercel URL) and `CRON_SECRET`
+   (same value as in Vercel). The workflows in `.github/workflows/` call the
+   protected cron routes:
+   - `ingest.yml` — every 15 min: sync results + recompute scores.
+   - `reminders.yml` — hourly: email players with un-predicted upcoming matches.
 4. As admin, open **/admin → Sincronizar agora** to pull real fixtures, and use
    the form to backfill each player's starting points from the old platform.
 
